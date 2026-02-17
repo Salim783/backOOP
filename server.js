@@ -1,15 +1,16 @@
 ﻿const express = require('express');
 const dotenv = require('dotenv');
-const authRoutes = require('./routes/authRoutes');
-
 dotenv.config();
 
 const { connectDB } = require('./db');
+const authRoutes = require('./routes/authRoutes');
+const produitRoutes = require('./routes/produitRoutes');
 
 const app = express();
 
 app.use(express.json());
 app.use('/api/auth', authRoutes);
+app.use('/api/produits', produitRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'API backend operationnelle' });
