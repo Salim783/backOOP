@@ -38,6 +38,11 @@ const validateCreationProduit = [
     .optional()
     .isInt({ min: 0 })
     .withMessage('La quantite doit etre un entier positif ou nul.'),
+  body('img')
+    .optional()
+    .trim()
+    .isURL({ protocols: ['http', 'https'], require_protocol: true })
+    .withMessage("L image doit etre un lien URL valide (http ou https)."),
   formatValidationErrors,
 ];
 
@@ -61,9 +66,6 @@ const validateProduitId = [
 ];
 
 const validateMiseAJourProduit = [
-  param('id')
-    .isInt({ min: 1 })
-    .withMessage('L identifiant du produit est invalide.'),
   body().custom((_, { req }) => {
     const champsMaj = [
       'titre',
@@ -74,9 +76,9 @@ const validateMiseAJourProduit = [
       'quantite',
     ];
 
-    const contientUnChamp = champsMaj.some(
-      (champ) => req.body[champ] !== undefined
-    );
+    const contientUnChamp =
+      champsMaj.some((champ) => req.body[champ] !== undefined) ||
+      Boolean(req.file);
 
     if (!contientUnChamp) {
       throw new Error('Aucun champ a modifier n a ete fourni.');
@@ -107,6 +109,11 @@ const validateMiseAJourProduit = [
     .optional()
     .isInt({ min: 0 })
     .withMessage('La quantite doit etre un entier positif ou nul.'),
+  body('img')
+    .optional()
+    .trim()
+    .isURL({ protocols: ['http', 'https'], require_protocol: true })
+    .withMessage("L image doit etre un lien URL valide (http ou https)."),
   formatValidationErrors,
 ];
 
