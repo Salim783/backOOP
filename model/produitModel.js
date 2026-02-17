@@ -17,6 +17,11 @@ const Produit = sequelize.define(
       type: DataTypes.TEXT,
       allowNull: false,
     },
+    categorie: {
+      type: DataTypes.STRING(100),
+      allowNull: false,
+      defaultValue: 'Non classe',
+    },
     prix: {
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false,
