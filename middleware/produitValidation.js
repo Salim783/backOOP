@@ -1,11 +1,26 @@
+const fs = require('fs');
 const { body, param, query, validationResult } = require('express-validator');
 
-const formatValidationErrors = (req, res, next) => {
+const nettoyerFichierUpload = async (req) => {
+  if (!req.file || !req.file.path) {
+    return;
+  }
+
+  try {
+    await fs.promises.unlink(req.file.path);
+  } catch (_error) {
+    // Ignore si le fichier n existe deja plus.
+  }
+};
+
+const formatValidationErrors = async (req, res, next) => {
   const errors = validationResult(req);
 
   if (errors.isEmpty()) {
     return next();
   }
+
+  await nettoyerFichierUpload(req);
 
   return res.status(400).json({
     message: 'Erreurs de validation.',
