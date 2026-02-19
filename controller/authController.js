@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const User = require('../model/userModel');
+const { genererJwtUtilisateur } = require('../utils/jwt');
 
 const inscrire = async (req, res) => {
   try {
@@ -19,12 +20,16 @@ const inscrire = async (req, res) => {
       mdp: mdpHash,
     });
 
+    const { token, tokenExpireLe } = genererJwtUtilisateur(nouvelUtilisateur);
+
     return res.status(201).json({
       message: 'Inscription reussie.',
       user: {
         id: nouvelUtilisateur.id,
         mail: nouvelUtilisateur.mail,
       },
+      token,
+      tokenExpireLe,
     });
   } catch (error) {
     return res.status(500).json({
@@ -52,12 +57,16 @@ const connexion = async (req, res) => {
       });
     }
 
+    const { token, tokenExpireLe } = genererJwtUtilisateur(utilisateur);
+
     return res.status(200).json({
       message: 'Connexion reussie.',
       user: {
         id: utilisateur.id,
         mail: utilisateur.mail,
       },
+      token,
+      tokenExpireLe,
     });
   } catch (error) {
     return res.status(500).json({

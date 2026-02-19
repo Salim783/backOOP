@@ -13,19 +13,27 @@ const {
   validateMiseAJourProduit,
 } = require('../middleware/produitValidation');
 const { uploadImageProduit } = require('../middleware/produitUpload');
+const { verifierToken } = require('../middleware/authToken');
 
 const router = express.Router();
 
 router.get('/', validatePaginationProduits, recupererProduits);
 router.get('/:id', validateProduitId, recupererProduitParId);
-router.post('/', uploadImageProduit, validateCreationProduit, ajouterProduit);
+router.post(
+  '/',
+  verifierToken,
+  uploadImageProduit,
+  validateCreationProduit,
+  ajouterProduit
+);
 router.put(
   '/:id',
+  verifierToken,
   validateProduitId,
   uploadImageProduit,
   validateMiseAJourProduit,
   modifierProduit
 );
-router.delete('/:id', validateProduitId, supprimerProduit);
+router.delete('/:id', verifierToken, validateProduitId, supprimerProduit);
 
 module.exports = router;
