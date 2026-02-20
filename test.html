@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<body>
+<button onclick="callApi()">Call API</button>
+
+<script>
+function callApi() {
+  fetch('http://localhost:5000/api/produits', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      titre: "Test",
+      description: "Desc",
+      categorie: "Test",
+      prix: 10,
+      quantite: 5
+    })
+  })
+  .then(res => res.json())
+  .then(console.log)
+  .catch(console.error);
+}
+</script>
+
+</body>
+</html>

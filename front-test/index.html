@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <body>
+    <button id="btn">Test CORS POST</button>
+    <pre id="out"></pre>
+
+    <script>
+      const out = document.getElementById("out");
+
+      document.getElementById("btn").onclick = async () => {
+        out.textContent = "Sending...\n";
+
+        try {
+          const res = await fetch("http://localhost:5000/api/produits", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              titre: "Test",
+              description: "Desc",
+              categorie: "Test",
+              prix: 10,
+              quantite: 1
+            })
+          });
+
+          const text = await res.text();
+          out.textContent += `Status: ${res.status}\n\n${text}`;
+        } catch (e) {
+          out.textContent += `ERROR: ${e.message}`;
+          console.error(e);
+        }
+      };
+    </script>
+  </body>
+</html>
