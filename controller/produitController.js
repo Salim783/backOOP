@@ -22,6 +22,17 @@ const pickDefinedFields = (source, champsAutorises) =>
 
 const PREFIXE_UPLOAD_IMAGE_PRODUIT = '/uploads/produits/';
 
+const envoyerErreurServeur = (res, message, error) =>
+  res.status(500).json({
+    message,
+    erreur: error.message,
+  });
+
+const envoyerProduitIntrouvable = (res) =>
+  res.status(404).json({
+    message: 'Produit introuvable.',
+  });
+
 const estImageLocaleProduit = (valeurImage) =>
   typeof valeurImage === 'string' &&
   valeurImage.startsWith(PREFIXE_UPLOAD_IMAGE_PRODUIT);
@@ -52,11 +63,26 @@ const extraireImageProduit = (req) => {
   return undefined;
 };
 
+const appliquerImageProduit = (produitData, imageProduit) => {
+  if (imageProduit !== undefined) {
+    produitData.img = imageProduit;
+  }
+};
+
+const lirePaginationProduits = (query) => {
+  const page = Number.parseInt(query.page, 10) || 1;
+  const limit = Number.parseInt(query.limit, 10) || 10;
+
+  return {
+    page,
+    limit,
+    offset: (page - 1) * limit,
+  };
+};
+
 const recupererProduits = async (req, res) => {
   try {
-    const page = Number.parseInt(req.query.page, 10) || 1;
-    const limit = Number.parseInt(req.query.limit, 10) || 10;
-    const offset = (page - 1) * limit;
+    const { page, limit, offset } = lirePaginationProduits(req.query);
 
     const { count, rows } = await Produit.findAndCountAll({
       offset,
@@ -78,10 +104,11 @@ const recupererProduits = async (req, res) => {
       produits: rows,
     });
   } catch (error) {
-    return res.status(500).json({
-      message: 'Erreur serveur pendant la recuperation des produits.',
-      erreur: error.message,
-    });
+    return envoyerErreurServeur(
+      res,
+      'Erreur serveur pendant la recuperation des produits.',
+      error
+    );
   }
 };
 
@@ -91,9 +118,7 @@ const recupererProduitParId = async (req, res) => {
     const produit = await Produit.findByPk(id);
 
     if (!produit) {
-      return res.status(404).json({
-        message: 'Produit introuvable.',
-      });
+      return envoyerProduitIntrouvable(res);
     }
 
     return res.status(200).json({
@@ -101,21 +126,21 @@ const recupererProduitParId = async (req, res) => {
       produit,
     });
   } catch (error) {
-    return res.status(500).json({
-      message: 'Erreur serveur pendant la recuperation du produit.',
-      erreur: error.message,
-    });
+    return envoyerErreurServeur(
+      res,
+      'Erreur serveur pendant la recuperation du produit.',
+      error
+    );
   }
 };
 
 const ajouterProduit = async (req, res) => {
+  let imageProduit;
+
   try {
     const produitData = pickDefinedFields(req.body, CHAMPS_MODIFIABLES_PRODUIT);
-    const imageProduit = extraireImageProduit(req);
-
-    if (imageProduit !== undefined) {
-      produitData.img = imageProduit;
-    }
+    imageProduit = extraireImageProduit(req);
+    appliquerImageProduit(produitData, imageProduit);
 
     const produitCree = await Produit.create(produitData);
 
@@ -124,35 +149,33 @@ const ajouterProduit = async (req, res) => {
       produit: produitCree,
     });
   } catch (error) {
-    await supprimerImageLocaleProduit(extraireImageProduit(req));
+    await supprimerImageLocaleProduit(imageProduit);
 
-    return res.status(500).json({
-      message: "Erreur serveur pendant l ajout du produit.",
-      erreur: error.message,
-    });
+    return envoyerErreurServeur(
+      res,
+      "Erreur serveur pendant l ajout du produit.",
+      error
+    );
   }
 };
 
 const modifierProduit = async (req, res) => {
+  let imageProduit;
+
   try {
     const { id } = req.params;
     const produit = await Produit.findByPk(id);
+    imageProduit = extraireImageProduit(req);
 
     if (!produit) {
-      await supprimerImageLocaleProduit(extraireImageProduit(req));
+      await supprimerImageLocaleProduit(imageProduit);
 
-      return res.status(404).json({
-        message: 'Produit introuvable.',
-      });
+      return envoyerProduitIntrouvable(res);
     }
 
     const produitData = pickDefinedFields(req.body, CHAMPS_MODIFIABLES_PRODUIT);
-    const imageProduit = extraireImageProduit(req);
     const ancienneImage = produit.img;
-
-    if (imageProduit !== undefined) {
-      produitData.img = imageProduit;
-    }
+    appliquerImageProduit(produitData, imageProduit);
 
     await produit.update(produitData);
 
@@ -165,12 +188,13 @@ const modifierProduit = async (req, res) => {
       produit,
     });
   } catch (error) {
-    await supprimerImageLocaleProduit(extraireImageProduit(req));
+    await supprimerImageLocaleProduit(imageProduit);
 
-    return res.status(500).json({
-      message: 'Erreur serveur pendant la modification du produit.',
-      erreur: error.message,
-    });
+    return envoyerErreurServeur(
+      res,
+      'Erreur serveur pendant la modification du produit.',
+      error
+    );
   }
 };
 
@@ -180,9 +204,7 @@ const supprimerProduit = async (req, res) => {
     const produit = await Produit.findByPk(id);
 
     if (!produit) {
-      return res.status(404).json({
-        message: 'Produit introuvable.',
-      });
+      return envoyerProduitIntrouvable(res);
     }
 
     await produit.destroy();
@@ -192,16 +214,41 @@ const supprimerProduit = async (req, res) => {
       message: 'Produit supprime avec succes.',
     });
   } catch (error) {
-    return res.status(500).json({
-      message: 'Erreur serveur pendant la suppression du produit.',
-      erreur: error.message,
+    return envoyerErreurServeur(
+      res,
+      'Erreur serveur pendant la suppression du produit.',
+      error
+    );
+  }
+};
+
+const recupererStatistiquesProduits = async (_req, res) => {
+  try {
+    const [totalProduits, totalQuantite] = await Promise.all([
+      Produit.count(),
+      Produit.sum('quantite'),
+    ]);
+
+    return res.status(200).json({
+      message: 'Statistiques produits recuperees avec succes.',
+      statistiques: {
+        totalProduits,
+        totalQuantite: Number(totalQuantite) || 0,
+      },
     });
+  } catch (error) {
+    return envoyerErreurServeur(
+      res,
+      'Erreur serveur pendant la recuperation des statistiques.',
+      error
+    );
   }
 };
 
 module.exports = {
   recupererProduits,
   recupererProduitParId,
+  recupererStatistiquesProduits,
   ajouterProduit,
   modifierProduit,
   supprimerProduit,

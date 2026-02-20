@@ -2,6 +2,7 @@ const fs = require('node:fs');
 
 const Produit = require('../model/produitModel');
 const {
+  recupererStatistiquesProduits,
   ajouterProduit,
   modifierProduit,
   supprimerProduit,
@@ -10,12 +11,16 @@ const {
 const methodsOriginaux = {
   create: Produit.create,
   findByPk: Produit.findByPk,
+  count: Produit.count,
+  sum: Produit.sum,
   unlink: fs.promises.unlink,
 };
 
 const restaurerMocks = () => {
   Produit.create = methodsOriginaux.create;
   Produit.findByPk = methodsOriginaux.findByPk;
+  Produit.count = methodsOriginaux.count;
+  Produit.sum = methodsOriginaux.sum;
   fs.promises.unlink = methodsOriginaux.unlink;
 };
 
@@ -40,6 +45,31 @@ const creerReponseMock = () => {
 
 afterEach(() => {
   restaurerMocks();
+});
+
+test('recupererStatistiquesProduits doit retourner les statistiques publiques', async () => {
+  const req = {};
+  const res = creerReponseMock();
+
+  Produit.count = async () => 4;
+  Produit.sum = async (champ) => {
+    if (champ === 'quantite') {
+      return 15;
+    }
+
+    return null;
+  };
+
+  await recupererStatistiquesProduits(req, res);
+
+  expect(res.statusCode).toBe(200);
+  expect(res.payload.message).toBe(
+    'Statistiques produits recuperees avec succes.'
+  );
+  expect(res.payload.statistiques).toEqual({
+    totalProduits: 4,
+    totalQuantite: 15,
+  });
 });
 
 test('ajouterProduit doit creer un produit', async () => {

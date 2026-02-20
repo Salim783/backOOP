@@ -28,13 +28,23 @@ app.get('/', (req, res) => {
   res.json({ message: 'API backend operationnelle' });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = Number.parseInt(process.env.PORT, 10) || 5000;
 
 const startServer = async () => {
   await connectDB();
-  app.listen(PORT, () => {
-    console.log(`Serveur lance sur le port ${PORT}`);
+  return app.listen(PORT, () => {
+    console.log(`Serveur lance sur le port ${PORT}.`);
   });
 };
 
-startServer();
+if (require.main === module) {
+  startServer().catch((error) => {
+    console.error('Echec du demarrage du serveur:', error.message);
+    process.exit(1);
+  });
+}
+
+module.exports = {
+  app,
+  startServer,
+};

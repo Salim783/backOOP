@@ -2,40 +2,65 @@ const bcrypt = require('bcryptjs');
 const User = require('../model/userModel');
 const { genererJwtUtilisateur } = require('../utils/jwt');
 
+const NOMBRE_ROUNDS_HASH_MDP = 12;
+
+const construirePayloadUtilisateur = (utilisateur) => ({
+  id: utilisateur.id,
+  mail: utilisateur.mail,
+});
+
+const envoyerSuccesAuthentification = (
+  res,
+  statusCode,
+  message,
+  utilisateur
+) => {
+  const { token, tokenExpireLe } = genererJwtUtilisateur(utilisateur);
+
+  return res.status(statusCode).json({
+    message,
+    user: construirePayloadUtilisateur(utilisateur),
+    token,
+    tokenExpireLe,
+  });
+};
+
+const envoyerErreurServeur = (res, message, error) =>
+  res.status(500).json({
+    message,
+    erreur: error.message,
+  });
+
 const inscrire = async (req, res) => {
   try {
     const { mail, mdp } = req.body;
 
-    const userExiste = await User.findOne({ where: { mail } });
-    if (userExiste) {
+    const utilisateurExistant = await User.findOne({ where: { mail } });
+    if (utilisateurExistant) {
       return res.status(409).json({
         message: 'Ce mail est deja utilise.',
       });
     }
 
-    const mdpHash = await bcrypt.hash(mdp, 12);
+    const mdpHash = await bcrypt.hash(mdp, NOMBRE_ROUNDS_HASH_MDP);
 
-    const nouvelUtilisateur = await User.create({
+    const utilisateur = await User.create({
       mail,
       mdp: mdpHash,
     });
 
-    const { token, tokenExpireLe } = genererJwtUtilisateur(nouvelUtilisateur);
-
-    return res.status(201).json({
-      message: 'Inscription reussie.',
-      user: {
-        id: nouvelUtilisateur.id,
-        mail: nouvelUtilisateur.mail,
-      },
-      token,
-      tokenExpireLe,
-    });
+    return envoyerSuccesAuthentification(
+      res,
+      201,
+      'Inscription reussie.',
+      utilisateur
+    );
   } catch (error) {
-    return res.status(500).json({
-      message: 'Erreur serveur pendant l inscription.',
-      erreur: error.message,
-    });
+    return envoyerErreurServeur(
+      res,
+      'Erreur serveur pendant l inscription.',
+      error
+    );
   }
 };
 
@@ -57,22 +82,18 @@ const connexion = async (req, res) => {
       });
     }
 
-    const { token, tokenExpireLe } = genererJwtUtilisateur(utilisateur);
-
-    return res.status(200).json({
-      message: 'Connexion reussie.',
-      user: {
-        id: utilisateur.id,
-        mail: utilisateur.mail,
-      },
-      token,
-      tokenExpireLe,
-    });
+    return envoyerSuccesAuthentification(
+      res,
+      200,
+      'Connexion reussie.',
+      utilisateur
+    );
   } catch (error) {
-    return res.status(500).json({
-      message: 'Erreur serveur pendant la connexion.',
-      erreur: error.message,
-    });
+    return envoyerErreurServeur(
+      res,
+      'Erreur serveur pendant la connexion.',
+      error
+    );
   }
 };
 

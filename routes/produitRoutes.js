@@ -2,6 +2,7 @@ const express = require('express');
 const {
   recupererProduits,
   recupererProduitParId,
+  recupererStatistiquesProduits,
   ajouterProduit,
   modifierProduit,
   supprimerProduit,
@@ -18,6 +19,7 @@ const { verifierToken } = require('../middleware/authToken');
 const router = express.Router();
 
 router.get('/', validatePaginationProduits, recupererProduits);
+router.get('/stats', recupererStatistiquesProduits);
 router.get('/:id', validateProduitId, recupererProduitParId);
 router.post(
   '/',

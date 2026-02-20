@@ -5,6 +5,7 @@ const { genererJwtUtilisateur } = require('../utils/jwt');
 jest.mock('../controller/produitController', () => ({
   recupererProduits: jest.fn(),
   recupererProduitParId: jest.fn(),
+  recupererStatistiquesProduits: jest.fn(),
   ajouterProduit: jest.fn(),
   modifierProduit: jest.fn(),
   supprimerProduit: jest.fn(),
@@ -36,6 +37,13 @@ beforeEach(() => {
     })
   );
 
+  produitController.recupererStatistiquesProduits.mockImplementation(
+    (req, res) =>
+      res.status(200).json({
+        message: 'Stats OK',
+      })
+  );
+
   produitController.modifierProduit.mockImplementation((req, res) =>
     res.status(200).json({
       message: 'Modification OK',
@@ -62,6 +70,18 @@ test('POST /api/produits refuse sans token', async () => {
   expect(response.status).toBe(401);
   expect(response.body.message).toBe("Token d identification manquant ou invalide.");
   expect(produitController.ajouterProduit).not.toHaveBeenCalled();
+});
+
+test('GET /api/produits/stats est accessible sans token', async () => {
+  const app = creerAppTest();
+
+  const response = await request(app).get('/api/produits/stats');
+
+  expect(response.status).toBe(200);
+  expect(response.body.message).toBe('Stats OK');
+  expect(produitController.recupererStatistiquesProduits).toHaveBeenCalledTimes(
+    1
+  );
 });
 
 test('POST /api/produits refuse avec token invalide', async () => {

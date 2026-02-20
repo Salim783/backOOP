@@ -1,5 +1,11 @@
 const { body, validationResult } = require('express-validator');
 
+const mapperErreursValidation = (errors) =>
+  errors.array().map((error) => ({
+    champ: error.path,
+    message: error.msg,
+  }));
+
 const formatValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
 
@@ -9,23 +15,23 @@ const formatValidationErrors = (req, res, next) => {
 
   return res.status(400).json({
     message: 'Erreurs de validation.',
-    erreurs: errors.array().map((error) => ({
-      champ: error.path,
-      message: error.msg,
-    })),
+    erreurs: mapperErreursValidation(errors),
   });
 };
 
-const validateInscription = [
+const validerMailObligatoire = () =>
   body('mail')
     .trim()
     .notEmpty()
     .withMessage('Le mail est obligatoire.')
     .isEmail()
-    .withMessage('Format de mail invalide.'),
-  body('mdp')
-    .notEmpty()
-    .withMessage('Le mot de passe est obligatoire.')
+    .withMessage('Format de mail invalide.');
+
+const validerMotDePasseObligatoire = () =>
+  body('mdp').notEmpty().withMessage('Le mot de passe est obligatoire.');
+
+const validerMotDePasseInscription = () =>
+  validerMotDePasseObligatoire()
     .isLength({ min: 12 })
     .withMessage('Le mot de passe doit contenir au moins 12 caracteres.')
     .matches(/[A-Z]/)
@@ -33,20 +39,17 @@ const validateInscription = [
     .matches(/[^A-Za-z0-9]/)
     .withMessage(
       'Le mot de passe doit contenir au moins un caractere special.'
-    ),
+    );
+
+const validateInscription = [
+  validerMailObligatoire(),
+  validerMotDePasseInscription(),
   formatValidationErrors,
 ];
 
 const validateConnexion = [
-  body('mail')
-    .trim()
-    .notEmpty()
-    .withMessage('Le mail est obligatoire.')
-    .isEmail()
-    .withMessage('Format de mail invalide.'),
-  body('mdp')
-    .notEmpty()
-    .withMessage('Le mot de passe est obligatoire.'),
+  validerMailObligatoire(),
+  validerMotDePasseObligatoire(),
   formatValidationErrors,
 ];
 
